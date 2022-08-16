@@ -2,90 +2,109 @@ namespace Enterpreter;
 
 public class Interpreter
 {
-    public string Text;
-    public int Pos;
-    public Token CurrentToken;
-    public char? CurrentChar;
+    private readonly string _text;
+    private int _pos;
+    private Token _currentToken;
+    private char _currentChar;
 
     public Interpreter(string text)
     {
-        Text = text;
-        Pos = 0;
-        CurrentChar = text[Pos];
+        _text = text;
+        _pos = 0;
+        _currentChar = text[_pos];
     }
 
-    public void Advance()
+    private object Term()
     {
-        Pos += 1;
-        if (Pos > Text.Length - 1)
+        var token = _currentToken;
+        Eat(Type.Integer);
+        return token.Value;
+    }
+
+    private void Advance()
+    {
+        _pos += 1;
+        if (_pos > _text.Length - 1)
         {
-            CurrentChar = null;
+            _currentChar = '\0';
         }
         else
         {
-            CurrentChar = Text[Pos];
+            _currentChar = _text[_pos];
         }
     }
 
-    public void SkipWhitespace()
+    private void SkipWhitespace()
     {
-        while (CurrentChar is not null && Char.IsWhiteSpace((char) CurrentChar))
+        while (_currentChar is not '\0' && Char.IsWhiteSpace(_currentChar))
         {
             Advance();
         }
     }
 
-    public int Integer()
+    private int Integer()
     {
         var result = "";
-        while (CurrentChar is not null && Char.IsDigit((char) CurrentChar))
+        while (_currentChar is not '\0' && Char.IsDigit(_currentChar))
         {
-            result += CurrentChar;
+            result += _currentChar;
             Advance();
         }
 
         return int.Parse(result);
     }
-    
-    public Token NextToken()
+
+    private Token NextToken()
     {
 
-        while (CurrentChar is not null)
+        while (_currentChar is not '\0')
         {
-            if (Char.IsWhiteSpace((char) CurrentChar))
+            if (Char.IsWhiteSpace(_currentChar))
             {
                 SkipWhitespace();
                 continue;
             }
 
-            if (Char.IsDigit((char) CurrentChar))
+            if (Char.IsDigit(_currentChar))
             {
-                return new Token(Type.INTEGER, Integer());
+                return new Token(Type.Integer, Integer());
             }
 
-            if (CurrentChar == '+')
+            if (_currentChar == '+')
             {
                 Advance();
-                return new Token(Type.PLUS, '+');
+                return new Token(Type.Plus, '+');
             }
             
-            if (CurrentChar == '-')
+            if (_currentChar == '-')
             {
                 Advance();
-                return new Token(Type.MINUS, '-');
+                return new Token(Type.Minus, '-');
             }
             
-            throw new Exception("Error parsing input.");
+            if (_currentChar == '*')
+            {
+                Advance();
+                return new Token(Type.Factor, '*');
+            }
+            
+            if (_currentChar == '/')
+            {
+                Advance();
+                return new Token(Type.Divide, '/');
+            }
+            
+            throw new Exception($"Error while parsing token. Given value doesn't have a corresponding token.");
         }
-
-        return new Token(Type.EOF, null);
+       
+        return new Token(Type.Eof, Enumerable.Empty<object>());
     }
 
-    public void Eat(Type type)
+    private void Eat(Type type)
     {
-        if (CurrentToken.Type == type)
+        if (_currentToken.Type == type)
         {
-            CurrentToken = NextToken();
+            _currentToken = NextToken();
         }
         else
         {
@@ -95,41 +114,37 @@ public class Interpreter
 
     public int Expr()
     {
-        CurrentToken = NextToken();
-
-        var left = CurrentToken;
-        Eat(Type.INTEGER);
-
-        var op = CurrentToken;
-        if (op.Type == Type.PLUS)
+        _currentToken = NextToken();
+        int result = (int)Term();
+        while (
+            _currentToken.Type == Type.Plus || 
+            _currentToken.Type == Type.Minus ||
+            _currentToken.Type == Type.Divide ||
+            _currentToken.Type == Type.Factor
+            )
         {
-            Eat(Type.PLUS);
-        }
-        else
-        {
-            Eat(Type.MINUS);
-        }
-
-        var right = CurrentToken;
-        Eat(Type.INTEGER);
-
-        
-        if (left.Value != null || right.Value != null)
-        {
-            if (op.Type == Type.PLUS)
+            var token = _currentToken;
+            if (token.Type == Type.Plus)
             {
-                var result = (int)(left.Value ?? throw new InvalidOperationException()) + (int)(right.Value  ?? throw new InvalidOperationException());
-                return result;
-            }
-            else
+                Eat(Type.Plus);
+                result += (int)Term();
+            } 
+            else if (token.Type == Type.Minus)
             {
-                var result = 
-                    (int)((left.Value) ?? throw new InvalidOperationException()) - (int)((right.Value) ?? throw new InvalidOperationException());
-                return result;
+                Eat(Type.Minus);
+                result -= (int)Term();
             }
-            
+            else if (token.Type == Type.Divide)
+            {
+                Eat(Type.Divide);
+                result /= (int)Term();
+            }
+            else if (token.Type == Type.Factor)
+            {
+                Eat(Type.Factor);
+                result *= (int)Term();
+            }
         }
-        
-        throw new Exception("Token value null.");
+        return result;
     }
 }

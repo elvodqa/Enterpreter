@@ -2,9 +2,10 @@ namespace Enterpreter;
 
 public enum Type
 {
-    INTEGER,
-    MINUS,
-    PLUS,
-    EOF,
-    EMPTY
+    Integer,
+    Minus,
+    Plus,
+    Factor,
+    Divide,
+    Eof,
 }

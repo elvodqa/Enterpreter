@@ -3,9 +3,9 @@ namespace Enterpreter;
 public class Token
 {
     public readonly Type Type;
-    public object? Value;
+    public object Value;
     
-    public Token(Type type, object? value)
+    public Token(Type type, object value)
     {
         Type = type;
         Value = value;
