@@ -118,13 +118,14 @@ public class Interpreter
         {
             if (op.Type == Type.PLUS)
             {
-                var _result = (int)(left.Value) + (int)(right.Value);
-                return _result;
+                var result = (int)(left.Value ?? throw new InvalidOperationException()) + (int)(right.Value  ?? throw new InvalidOperationException());
+                return result;
             }
             else
             {
-                var _result = (int)(left.Value) - (int)(right.Value);
-                return _result;
+                var result = 
+                    (int)((left.Value) ?? throw new InvalidOperationException()) - (int)((right.Value) ?? throw new InvalidOperationException());
+                return result;
             }
             
         }
